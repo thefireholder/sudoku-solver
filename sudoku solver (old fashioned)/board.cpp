@@ -38,7 +38,7 @@ void Board::initPosCell()
 //first 9 bit: (possible sudoku value: 1-9)
 //      taken from surrounding row, col, box.
 //      written even for the known values.
-//next 7 bit: (sudoku index 0-80) 81 index total
+//next 4 bit: (box index 0-8)
 
 {
     //following 3 arrays store numbers that are already taken across
@@ -98,7 +98,7 @@ void Board::initPosCell()
         }
     }
     
-    //**use the row, col, box potential to store values that are NOT taken:
+    //**use the row, col, box potential to store values that are already taken:
     
        //  for row & col
     for (int i = 0; i < 9; i++) //for row, col
@@ -111,15 +111,19 @@ void Board::initPosCell()
         for (int j = 0; j < 3; j++) //for a row in those 3 rows
             for (int k = 0; k < 3; k++) //for 3 cols in each row
             {
-                int temp = boxPotential[i + k];
+                int temp = boxPotential[i + k]; //boxPotential
+                temp |= (i+k) << 9; //box index
                 posCells[ipos++] |= temp;
                 posCells[ipos++] |= temp;
                 posCells[ipos++] |= temp;
             }
     
-        //inverse the result to find values that are NOT taken
+        //also store box index during (// for box) ^
     
-    short mask = 511;
+    
+    //**inverse the result to find values that are NOT taken
+    
+    unsigned short mask = 511;
     for (int i = 0; i < 81; i++)
         posCells[i] ^= mask;
     
@@ -150,8 +154,8 @@ void Board::initPotSets()
             int index = i*9+j;
             if (!cells[index])
             {
-                rowPotSet[i].insert(&cells[index]);
-                colPotSet[j].insert(&cells[index]);
+                rowPotSet[i].insert(&posCells[index]);
+                colPotSet[j].insert(&posCells[index]);
             }
         }
     }
@@ -208,6 +212,7 @@ int Board::calculate()
             //fix Cells & posCells
             //remove that value from cells in all the relevant potSets
             //remove that address from all the potSets
+            updateCell(address, testCase);
         }
     }
     
@@ -215,6 +220,25 @@ int Board::calculate()
     return -1;
 }
 
+
+void Board::updateCell(unsigned short *address, unsigned short bit)
+//updates Cell with value (bit), (doesn't update posCell)
+//remove that value from cells in all the relevant potSets
+//remove that address from all the potSets
+{
+    unsigned short value = b2d(bit);
+    long index = address - posCells;
+    cout << index << " " << value << endl;
+    
+    //update Cell
+    cells[index] = value;
+    
+    //remove that value from cells in all the relevant potSets
+    long icol = index/9;
+    long irow = index%9;
+    long ibox;
+    
+}
 
 void Board::printCells()
 {

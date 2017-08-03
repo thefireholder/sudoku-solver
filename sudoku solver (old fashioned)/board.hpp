@@ -36,6 +36,11 @@ private:
     //initialize potential sets from posCells and cells
     //store only the unknowns in them
     
+    void updateCell(unsigned short* address, unsigned short bit);
+    //[used only calculate()]: with the correct value (bit)
+    //makes necc. change on cells, posCells, potSets for calculate to
+    //work properly.
+    
     unsigned short bitCount9(unsigned short bit);
     //count how many bits are on in the first 9 bit.
     
