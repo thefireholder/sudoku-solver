@@ -154,31 +154,24 @@ void Board::initPotSets()
             int index = i*9+j;
             if (!cells[index])
             {
-                rowPotSet[i].insert(&posCells[index]);
-                colPotSet[j].insert(&posCells[index]);
+                unsigned short *address = &posCells[index];
+                short ibox = (posCells[index] >> 9) & 15;
+                
+                rowPotSet[i].insert(address);
+                colPotSet[j].insert(address);
+                boxPotSet[ibox].insert(address);
             }
         }
     }
     
-    //store address of unkown cells into box Sets
-    int ipos = -1; //for box
-    for (int i = 0; i < 9; i+=3) //for every 3 rows
-        for (int j = 0; j < 3; j++) //for a row in those 3 rows
-            for (int k = 0; k < 3; k++) //for 3 cols in each row
-            {
-                if (!cells[++ipos])
-                    boxPotSet[i+k].insert(&posCells[ipos]);
-                if (!cells[++ipos])
-                    boxPotSet[i+k].insert(&posCells[ipos]);
-                if (!cells[++ipos])
-                    boxPotSet[i+k].insert(&posCells[ipos]);
-            }
+
 }
 
 int Board::calculate()
 {
+    
     //start with box since it's easiest
-    for (auto && s : boxPotSet[0])
+    for (auto && s : boxPotSet[7])
     {
         cout << s << "|";
         cout << *s<< "*";
@@ -187,58 +180,157 @@ int Board::calculate()
     cout << endl;
     
     //check if a cell in a set contains a value that is unique to itself
-    for (unsigned short testCase = 1; testCase < 256; testCase <<= 1)
-    {
-        //future: see if rejecting known 0 makes it faster or not
-        int count = 0;
-        for (auto && s : boxPotSet[0])
-            count += !!(*s & testCase);
-        
-        //if it is unique
-        if (count == 1)
-        {
-            //find the address
-            unsigned short* address;
-            for (auto && s : boxPotSet[0])
-            {
-                if (*s & testCase)
-                {
-                    address = s;
-                    cout << address << ": " << testCase << endl;
-                    break;
-                }
-            }
-            
-            //fix Cells & posCells
-            //remove that value from cells in all the relevant potSets
-            //remove that address from all the potSets
-            updateCell(address, testCase);
-        }
-    }
-    
+    for (int i = 0; i < 9; i++)
+        setInvestigation(boxPotSet[i]);
     
     return -1;
 }
 
+int Board::setInvestigation(unordered_set<unsigned short *> &potSet)
+//investigate a given set to identify cells with unique potential value.
+//such cells will be given that number as its true value. and that value
+//(+address) will be removed from its column, row and box
+//returns number of correctly identified cells (returns -1 if there is error)
+{
+    bool identified;
+    int nidentified = 0;
+    do{
+        identified = false;
+        //testing 0-9 (bit wise) on all cells within a set
+        for (unsigned short testCase = 1; testCase < 256; testCase <<= 1)
+        {
+            //future: see if rejecting known 0 makes it faster or not
+            int count = 0;
+            for (auto && s : potSet)
+                count += !!(*s & testCase);
+            
+            //if it is unique
+            if (count == 1)
+            {
+                //find the address
+                unsigned short* address;
+                for (auto && s : potSet)
+                {
+                    if (*s & testCase)
+                    {
+                        address = s;
+                        break;
+                    }
+                }
+                
+                //updates Cell with value (bit), (doesn't update posCell)
+                //remove that value from cells in all the relevant potSets
+                //remove that address from all the potSets
+                int result = updateCell(address, testCase);
+                
+                //if the result is bad, must report
+                if(result == -1)
+                    cout << "something's wrong after we updated address:" << address-posCells << "with value" << b2d(testCase);
+                
+                //flag
+                identified = true;
+                nidentified++;
+            }
+        }
+    }
+    while(identified);
+    return nidentified;
+}
 
-void Board::updateCell(unsigned short *address, unsigned short bit)
+int Board::updateCell(unsigned short *address, unsigned short bit)
 //updates Cell with value (bit), (doesn't update posCell)
 //remove that value from cells in all the relevant potSets
 //remove that address from all the potSets
 {
-    unsigned short value = b2d(bit);
-    long index = address - posCells;
+    //preparing necc info.
+    unsigned short value = b2d(bit); //decimal value
+    int index = (int)(address - posCells); //0-80
+    int irow = index/9; //0-8
+    int icol = index%9; //0-8
+    int ibox = (*address >> 9) & 15; //0-8
+    
+    
     cout << index << " " << value << endl;
+    cout << irow << ":" << icol<<":" << ibox <<endl;;
     
     //update Cell
     cells[index] = value;
     
+    //remove that address from all the potSets
+    rowPotSet[irow].erase(address);
+    colPotSet[icol].erase(address);
+    boxPotSet[ibox].erase(address);
+    
     //remove that value from cells in all the relevant potSets
-    long icol = index/9;
-    long irow = index%9;
-    long ibox;
+    unsigned short mask = ~bit;
+    for(auto &&s : rowPotSet[irow])
+        *s &= mask;
+    for(auto &&s : colPotSet[icol])
+        *s &= mask;
+    for(auto &&s : boxPotSet[ibox])
+        *s &= mask;
+    
+    //check (can remove in the future)
+    cout << "cell[" << irow << "][" << icol << "]: updated " << value <<endl;
+    bool result = repetitionCheck(value, irow, icol, ibox);
+    if(result) cout<< "repeated" <<endl;
+    else cout << "not repeated"<< endl;
+    result = emptyAddressCheck(irow, icol, ibox);
+    if(result) cout<< "empty address found" <<endl;
+    else cout << "no empty address"<< endl;
+    
+    return 0;
     
 }
+
+bool Board::repetitionCheck(int value, int row, int col, int box)
+//see if a value is repeated more than once in given row, col ,box
+//if repeated: true
+{
+    //row check
+    int counter = 0;
+    for (int i = 0; i < 9; i++)
+        counter += (cells[row*9+i] == value);
+    if (counter > 1) return true;
+    
+    //col check
+    counter = 0;
+    for (int i = 0; i < 81; i+=9)
+        counter += (cells[col+i]==value);
+    if (counter > 1) return true;
+    
+    //box check
+    counter = 0;
+    int threshold;
+    
+    if (box < 3){threshold=27; box=box*3;}
+    else if (box < 6){threshold=54; box=(box-3)*3;}
+    else {threshold=81; box = (box-6)*3;}
+    
+    for (int i = threshold-27; i < threshold; i+=9)
+    {
+        counter += (cells[box+i]==value);
+        counter += (cells[box+i+1]==value);
+        counter += (cells[box+i+2]==value);
+    }
+    if (counter > 1) return true;
+    
+    return false;
+}
+
+bool Board::emptyAddressCheck(int row, int col, int box)
+//see if PotSets with following index contain address with value of first 1-9th little endian values as all 0s
+//if empty Address found: true
+{
+    for(auto &&s : rowPotSet[row])
+        if(!((*s)&511)) return true;
+    for(auto &&s : colPotSet[col])
+        if(!((*s)&511)) return true;
+    for(auto &&s : boxPotSet[box])
+        if(!((*s)&511)) return true;
+    return false;
+}
+
 
 void Board::printCells()
 {

@@ -21,7 +21,7 @@ public:
     //print the whole sudoku page stored in cells
     
     int calculate();
-    //solve sudoku, -2 : contradiction, -1 : cannot solve
+    //0: solve sudoku, -2 : contradiction, -1 : cannot solve
     
     void cellStatus(short r, short c);
     //show a cell's status
@@ -36,10 +36,24 @@ private:
     //initialize potential sets from posCells and cells
     //store only the unknowns in them
     
-    void updateCell(unsigned short* address, unsigned short bit);
+    int setInvestigation(std::unordered_set<unsigned short*> &potSet);
+    //investigate a potSets and update Cell accordingly,
+    //return the number of correctly updated cell.
+    //note: if found, calls updateCell to mutates posCells & other potSets
+    
+    int updateCell(unsigned short* address, unsigned short bit);
     //[used only calculate()]: with the correct value (bit)
     //makes necc. change on cells, posCells, potSets for calculate to
     //work properly.
+    //return -1 if set w/ empty address is found after updating; then
+    //address will point to problematic address at hand
+    //return -2 if row, col box has repetition of number after updating
+    
+    bool repetitionCheck(int value, int row, int col, int box);
+    //see if a value (decimal) is repeated more than once in given row, col ,box (true : repeated)
+    
+    bool emptyAddressCheck(int row, int col, int box);
+    //see if PotSets with following index contain address with value of first 1-9th little endian values as all 0s. true : empty address
     
     unsigned short bitCount9(unsigned short bit);
     //count how many bits are on in the first 9 bit.
@@ -52,6 +66,7 @@ private:
     
     unsigned short posCells[81];
     //read initPosCell description
+
     
 
     std::unordered_set<unsigned short*> rowPotSet[9];
