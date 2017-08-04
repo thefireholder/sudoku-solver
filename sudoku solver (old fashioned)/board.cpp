@@ -171,7 +171,7 @@ int Board::calculate()
 {
     
     //start with box since it's easiest
-    for (auto && s : boxPotSet[7])
+    for (auto && s : boxPotSet[0])
     {
         cout << s << "|";
         cout << *s<< "*";
@@ -182,20 +182,28 @@ int Board::calculate()
     //check if a cell in a set contains a value that is unique to itself
     for (int i = 0; i < 9; i++)
         setInvestigation(boxPotSet[i]);
+
+    for (int i = 0; i < 9; i++)
+        setInvestigation(colPotSet[i]);
     
     return -1;
 }
 
 int Board::setInvestigation(unordered_set<unsigned short *> &potSet)
-//investigate a given set to identify cells with unique potential value.
+//investigate a given set for 2 case
+//case 1: identify cells with potential value that is unique to that cell.
+//case 2: identify cells with bitCount = 1
 //such cells will be given that number as its true value. and that value
 //(+address) will be removed from its column, row and box
+//
 //returns number of correctly identified cells (returns -1 if there is error)
 {
     bool identified;
     int nidentified = 0;
     do{
         identified = false;
+        
+    //case 1:
         //testing 0-9 (bit wise) on all cells within a set
         for (unsigned short testCase = 1; testCase < 256; testCase <<= 1)
         {
@@ -224,14 +232,35 @@ int Board::setInvestigation(unordered_set<unsigned short *> &potSet)
                 int result = updateCell(address, testCase);
                 
                 //if the result is bad, must report
-                if(result == -1)
+                if(result < 0)
+                {
                     cout << "something's wrong after we updated address:" << address-posCells << "with value" << b2d(testCase);
+                    return result;
+                }
                 
                 //flag
                 identified = true;
                 nidentified++;
             }
         }
+        
+    //case 2:
+        for (auto && s : potSet)
+            if (bitCount9(*s)==1)
+            {
+                unsigned short bit = (*s)&511;
+                int result = updateCell(s, bit);
+                
+                if(result < 0)
+                {
+                    cout << "something's wrong after we updated cell[" << s-posCells << "] with value " << b2d(bit) << endl;
+                    return result;
+                }
+                
+                //flag
+                identified = true;
+                nidentified++;
+            }
     }
     while(identified);
     return nidentified;
@@ -243,18 +272,14 @@ int Board::updateCell(unsigned short *address, unsigned short bit)
 //remove that address from all the potSets
 {
     //preparing necc info.
-    unsigned short value = b2d(bit); //decimal value
+    unsigned short value = bit; //decimal value
     int index = (int)(address - posCells); //0-80
     int irow = index/9; //0-8
     int icol = index%9; //0-8
     int ibox = (*address >> 9) & 15; //0-8
     
-    
-    cout << index << " " << value << endl;
-    cout << irow << ":" << icol<<":" << ibox <<endl;;
-    
     //update Cell
-    cells[index] = value;
+    cells[index] = bit;
     
     //remove that address from all the potSets
     rowPotSet[irow].erase(address);
@@ -270,13 +295,14 @@ int Board::updateCell(unsigned short *address, unsigned short bit)
     for(auto &&s : boxPotSet[ibox])
         *s &= mask;
     
-    //check (can remove in the future)
-    cout << "cell[" << irow << "][" << icol << "]: updated " << value <<endl;
+    //check (this section can be remove in the future)
+    cout << endl << "cell[" << irow << "][" << icol << "]: updated " << value <<endl;
+    
     bool result = repetitionCheck(value, irow, icol, ibox);
-    if(result) cout<< "repeated" <<endl;
+    if(result) {cout<< "repeated" <<endl; return -1;}
     else cout << "not repeated"<< endl;
     result = emptyAddressCheck(irow, icol, ibox);
-    if(result) cout<< "empty address found" <<endl;
+    if(result) {cout<< "empty address found" <<endl; return -1;}
     else cout << "no empty address"<< endl;
     
     return 0;

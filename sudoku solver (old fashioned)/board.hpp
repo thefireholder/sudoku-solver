@@ -62,7 +62,7 @@ private:
     //convert bitWise to decimal (Ex: 4 -> 3, 16-> 5)
     
     unsigned short cells[81];
-    //actual value in decimal (zero means unknown)
+    //actual value in bits (zero means unknown)
     
     unsigned short posCells[81];
     //read initPosCell description
