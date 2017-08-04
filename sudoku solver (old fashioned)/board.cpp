@@ -235,7 +235,7 @@ int Board::setInvestigation(unordered_set<unsigned short *> &potSet)
                 //if the result is bad, must report
                 if(result < 0)
                 {
-                    cout << "something's wrong after we updated address:" << address-posCells << "with value" << b2d(testCase);
+                    cout << "something's wrong after we updated cell[" << address-posCells << "] with value " << b2d(testCase) <<endl;                    
                     return result;
                 }
                 
@@ -299,7 +299,7 @@ int Board::updateCell(unsigned short *address, unsigned short bit)
     //check (this section can be remove in the future)
     cout << "cell[" << irow << "][" << icol << "]: updated " << value <<endl;
     
-    bool result = repetitionCheck(value, irow, icol, ibox);
+    bool result = repetitionCheck(bit, irow, icol, ibox);
     if(result) {cout<< "repeated" <<endl; error = -2; return -2; }
 //    else cout << "not repeated"<< endl;
     result = emptyAddressCheck(irow, icol, ibox);
@@ -310,20 +310,20 @@ int Board::updateCell(unsigned short *address, unsigned short bit)
     
 }
 
-bool Board::repetitionCheck(int value, int row, int col, int box)
+bool Board::repetitionCheck(int bit, int row, int col, int box)
 //see if a value is repeated more than once in given row, col ,box
 //if repeated: true
 {
     //row check
     int counter = 0;
     for (int i = 0; i < 9; i++)
-        counter += (cells[row*9+i] == value);
+        counter += (cells[row*9+i] == bit);
     if (counter > 1) return true;
     
     //col check
     counter = 0;
     for (int i = 0; i < 81; i+=9)
-        counter += (cells[col+i]==value);
+        counter += (cells[col+i]==bit);
     if (counter > 1) return true;
     
     //box check
@@ -336,9 +336,9 @@ bool Board::repetitionCheck(int value, int row, int col, int box)
     
     for (int i = threshold-27; i < threshold; i+=9)
     {
-        counter += (cells[box+i]==value);
-        counter += (cells[box+i+1]==value);
-        counter += (cells[box+i+2]==value);
+        counter += (cells[box+i]==bit);
+        counter += (cells[box+i+1]==bit);
+        counter += (cells[box+i+2]==bit);
     }
     if (counter > 1) return true;
     

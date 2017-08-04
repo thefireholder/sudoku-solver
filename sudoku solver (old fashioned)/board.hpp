@@ -50,7 +50,7 @@ private:
     //address will point to problematic address at hand
     //return -2 if row, col box has repetition of number after updating
     
-    bool repetitionCheck(int value, int row, int col, int box);
+    bool repetitionCheck(int bit, int row, int col, int box);
     //see if a value (decimal) is repeated more than once in given row, col ,box (true : repeated)
     
     bool emptyAddressCheck(int row, int col, int box);
