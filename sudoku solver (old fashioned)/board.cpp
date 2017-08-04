@@ -169,7 +169,8 @@ void Board::initPotSets()
 
 int Board::calculate()
 {
-    int count, result;
+    int count;
+    error = 0;
     do
     {
         count = 0;
@@ -184,7 +185,7 @@ int Board::calculate()
         for (int i = 0; i < 9; i++)
             count += setInvestigation(rowPotSet[i]);
     }
-    while(count);
+    while(count && !error);
     
     return -1;
 }
@@ -299,10 +300,10 @@ int Board::updateCell(unsigned short *address, unsigned short bit)
     cout << "cell[" << irow << "][" << icol << "]: updated " << value <<endl;
     
     bool result = repetitionCheck(value, irow, icol, ibox);
-    if(result) {cout<< "repeated" <<endl; return -1;}
+    if(result) {cout<< "repeated" <<endl; error = -2; return -2; }
 //    else cout << "not repeated"<< endl;
     result = emptyAddressCheck(irow, icol, ibox);
-    if(result) {cout<< "empty address found" <<endl; return -1;}
+    if(result) {cout<< "empty address found" <<endl; error = -1; return -1;}
 //    else cout << "no empty address"<< endl;
     
     return 0;

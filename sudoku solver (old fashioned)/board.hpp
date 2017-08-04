@@ -68,7 +68,11 @@ private:
     unsigned short posCells[81];
     //read initPosCell description
 
-    
+    int error;
+    //way to update calculate() whether there is an error or not
+    //introduced to make calculation faster...
+    //0: no error, -1: emtpy address error, -2: repetition error
+    //should this be on, calculate should stop and exit
 
     std::unordered_set<unsigned short*> rowPotSet[9];
     std::unordered_set<unsigned short*> colPotSet[9];
