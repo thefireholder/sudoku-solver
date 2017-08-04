@@ -169,22 +169,22 @@ void Board::initPotSets()
 
 int Board::calculate()
 {
-    
-    //start with box since it's easiest
-    for (auto && s : boxPotSet[0])
+    int count, result;
+    do
     {
-        cout << s << "|";
-        cout << *s<< "*";
-        cout << endl;
+        count = 0;
+        //check if a cell in a set contains a value that is unique to itself
+        //or a value that has bitCount = 1
+        for (int i = 0; i < 9; i++)
+            count += setInvestigation(boxPotSet[i]);
+        
+        for (int i = 0; i < 9; i++)
+            count += setInvestigation(colPotSet[i]);
+        
+        for (int i = 0; i < 9; i++)
+            count += setInvestigation(rowPotSet[i]);
     }
-    cout << endl;
-    
-    //check if a cell in a set contains a value that is unique to itself
-    for (int i = 0; i < 9; i++)
-        setInvestigation(boxPotSet[i]);
-
-    for (int i = 0; i < 9; i++)
-        setInvestigation(colPotSet[i]);
+    while(count);
     
     return -1;
 }
@@ -205,7 +205,7 @@ int Board::setInvestigation(unordered_set<unsigned short *> &potSet)
         
     //case 1:
         //testing 0-9 (bit wise) on all cells within a set
-        for (unsigned short testCase = 1; testCase < 256; testCase <<= 1)
+        for (unsigned short testCase = 1; testCase <= 256; testCase <<= 1)
         {
             //future: see if rejecting known 0 makes it faster or not
             int count = 0;
@@ -272,7 +272,7 @@ int Board::updateCell(unsigned short *address, unsigned short bit)
 //remove that address from all the potSets
 {
     //preparing necc info.
-    unsigned short value = bit; //decimal value
+    unsigned short value = b2d(bit); //decimal value
     int index = (int)(address - posCells); //0-80
     int irow = index/9; //0-8
     int icol = index%9; //0-8
@@ -296,14 +296,14 @@ int Board::updateCell(unsigned short *address, unsigned short bit)
         *s &= mask;
     
     //check (this section can be remove in the future)
-    cout << endl << "cell[" << irow << "][" << icol << "]: updated " << value <<endl;
+    cout << "cell[" << irow << "][" << icol << "]: updated " << value <<endl;
     
     bool result = repetitionCheck(value, irow, icol, ibox);
     if(result) {cout<< "repeated" <<endl; return -1;}
-    else cout << "not repeated"<< endl;
+//    else cout << "not repeated"<< endl;
     result = emptyAddressCheck(irow, icol, ibox);
     if(result) {cout<< "empty address found" <<endl; return -1;}
-    else cout << "no empty address"<< endl;
+//    else cout << "no empty address"<< endl;
     
     return 0;
     
@@ -400,6 +400,31 @@ void Board::cellStatus(short r, short c)
     }
 }
 
+void Board::cellStatus(unsigned short *posCellptr)
+{
+    int index = int(posCellptr - posCells);
+    unsigned short content = cells[index];
+    cout << "cell[" << index/9 << "][" << index%9 << "]: ";
+    if (content)
+        cout << b2d(content) << endl;
+    else
+    {
+        content = *posCellptr;
+        unsigned short nChoice = bitCount9(content);
+        cout << "unknown" << endl;
+        cout << "out of "<< nChoice << " possible choice:";
+        
+        //print all choices
+        int index = 1;
+        for (int i = 1; i < 512; i *= 2)
+        {
+            if (content & i) cout << ' ' << index;
+            index++;
+        }
+        
+        cout << endl;
+    }
+}
 
 unsigned short Board::bitCount9(unsigned short bit)
 {

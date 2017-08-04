@@ -24,6 +24,7 @@ public:
     //0: solve sudoku, -2 : contradiction, -1 : cannot solve
     
     void cellStatus(short r, short c);
+    void cellStatus(unsigned short *posCellptr);
     //show a cell's status
     
 private:
