@@ -28,14 +28,15 @@ public:
     //show a cell's status
     
 private:
-    
-    
     void initPosCell();
     //initialize posCell from cell
     
     void initPotSets();
     //initialize potential sets from posCells and cells
     //store only the unknowns in them
+    
+    bool initContradictionTest();
+    //see if there is contradiction in the given sudoku (before solving)
     
     int setInvestigation(std::unordered_set<unsigned short*> &potSet);
     //investigate a potSets and update Cell accordingly,

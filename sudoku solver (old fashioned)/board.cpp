@@ -167,6 +167,22 @@ void Board::initPotSets()
 
 }
 
+bool Board::initContradictionTest()
+//test whether a given sudoku has a repetition in row col box
+//return true if there is contradiction (repetition)
+{
+    //row wise (incomplete)
+    unsigned short clean = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        unsigned short content = cells[i];
+        clean = (clean == (content &~clean))? (clean|content) : 65535;
+    }
+    if (clean == 65535) return true;
+    
+    return false;
+}
+
 int Board::calculate()
 {
     int count;
